@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -110,18 +111,6 @@ func TestClientBadDeviceToken(t *testing.T) {
 	res, err := mockClient("https://api.push.apple.com").Push(n)
 	assert.Error(t, err)
 	assert.Nil(t, res)
-}
-
-func TestClientNameToCertificate(t *testing.T) {
-	crt, _ := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
-	client := apns.NewClient(crt)
-	name := client.HTTPClient.Transport.(*http2.Transport).TLSClientConfig.NameToCertificate
-	assert.Len(t, name, 1)
-
-	certificate2 := tls.Certificate{}
-	client2 := apns.NewClient(certificate2)
-	name2 := client2.HTTPClient.Transport.(*http2.Transport).TLSClientConfig.NameToCertificate
-	assert.Len(t, name2, 0)
 }
 
 func TestDialTLSTimeout(t *testing.T) {
@@ -350,7 +339,10 @@ func Test400BadRequestPayloadEmptyResponse(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("apns-id", apnsID)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("{\"reason\":\"PayloadEmpty\"}"))
+		_, err := w.Write([]byte("{\"reason\":\"PayloadEmpty\"}"))
+		if err != nil {
+			log.Panicln(err)
+		}
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
@@ -368,7 +360,10 @@ func Test410UnregisteredResponse(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("apns-id", apnsID)
 		w.WriteHeader(http.StatusGone)
-		w.Write([]byte("{\"reason\":\"Unregistered\", \"timestamp\": 1458114061260 }"))
+		_, err := w.Write([]byte("{\"reason\":\"Unregistered\", \"timestamp\": 1458114061260 }"))
+		if err != nil {
+			log.Panicln(err)
+		}
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
@@ -384,7 +379,10 @@ func TestMalformedJSONResponse(t *testing.T) {
 	n := mockNotification()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Write([]byte("{{MalformedJSON}}"))
+		_, err := w.Write([]byte("{{MalformedJSON}}"))
+		if err != nil {
+			log.Panicln(err)
+		}
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
