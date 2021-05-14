@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.14', '1.16' ]
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Install go pkgs
+      run: go mod download
+    
+    - name: Install test related deps
+      run: sh scripts/install_deps_travis.sh
+
+    - name: Build
+      run: make build
+
+    - name: Test
+      run: make test
