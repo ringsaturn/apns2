@@ -113,23 +113,11 @@ func TestClientBadDeviceToken(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestClientNameToCertificate(t *testing.T) {
-	crt, _ := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
-	client := apns.NewClient(crt)
-	name := client.HTTPClient.Transport.(*http2.Transport).TLSClientConfig.NameToCertificate
-	assert.Len(t, name, 1)
-
-	certificate2 := tls.Certificate{}
-	client2 := apns.NewClient(certificate2)
-	name2 := client2.HTTPClient.Transport.(*http2.Transport).TLSClientConfig.NameToCertificate
-	assert.Len(t, name2, 0)
-}
-
 func TestDialTLSTimeout(t *testing.T) {
 	apns.TLSDialTimeout = 10 * time.Millisecond
 	crt, _ := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
 	client := apns.NewClient(crt)
-	dialTLS := client.HTTPClient.Transport.(*http2.Transport).DialTLS
+	dialTLS := client.HTTPClient.Transport.(*http2.Transport).DialTLSContext
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +125,11 @@ func TestDialTLSTimeout(t *testing.T) {
 	address := listener.Addr().String()
 	defer listener.Close()
 	var e error
-	if _, e = dialTLS("tcp", address, nil); e == nil {
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{crt},
+	}
+	_, e = dialTLS(context.Background(), "tcp", address, tlsConfig)
+	if e == nil {
 		t.Fatal("Dial completed successfully")
 	}
 	// Go 1.7.x and later will return a context deadline exceeded error
