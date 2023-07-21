@@ -221,7 +221,7 @@ func TestClientPushWithNilContext(t *testing.T) {
 	}))
 	defer server.Close()
 
-	res, err := mockClient(server.URL).PushWithContext(nil, n)
+	res, err := mockClient(server.URL).PushWithContext(context.Background(), n)
 	assert.EqualError(t, err, "net/http: nil Context")
 	assert.Nil(t, res)
 }
@@ -390,7 +390,7 @@ func Test400BadRequestPayloadEmptyResponse(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("apns-id", apnsID)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("{\"reason\":\"PayloadEmpty\"}"))
+		_, _ = w.Write([]byte("{\"reason\":\"PayloadEmpty\"}"))
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
@@ -408,7 +408,7 @@ func Test410UnregisteredResponse(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("apns-id", apnsID)
 		w.WriteHeader(http.StatusGone)
-		w.Write([]byte("{\"reason\":\"Unregistered\", \"timestamp\": 1458114061260 }"))
+		_, _ = w.Write([]byte("{\"reason\":\"Unregistered\", \"timestamp\": 1458114061260 }"))
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
@@ -424,7 +424,7 @@ func TestMalformedJSONResponse(t *testing.T) {
 	n := mockNotification()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Write([]byte("{{MalformedJSON}}"))
+		_, _ = w.Write([]byte("{{MalformedJSON}}"))
 	}))
 	defer server.Close()
 	res, err := mockClient(server.URL).Push(n)
