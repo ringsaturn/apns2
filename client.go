@@ -72,7 +72,8 @@ type connectionCloser interface {
 func NewClient(certificate tls.Certificate) *Client {
 	client := &Client{
 		HTTPClient: &http.Client{
-			Timeout: HTTPClientTimeout,
+			Timeout:   HTTPClientTimeout,
+			Transport: &http.Transport{},
 		},
 		Certificate: certificate,
 		Host:        DefaultHost,

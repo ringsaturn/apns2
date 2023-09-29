@@ -6,20 +6,16 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/net/http2"
 
 	apns "github.com/ringsaturn/apns2"
-	"github.com/ringsaturn/apns2/certificate"
 	"github.com/ringsaturn/apns2/token"
 	"github.com/stretchr/testify/assert"
 )
@@ -113,38 +109,6 @@ func TestClientBadDeviceToken(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestDialTLSTimeout(t *testing.T) {
-	apns.TLSDialTimeout = 10 * time.Millisecond
-	crt, err := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	client := apns.NewClient(crt)
-	dialTLS := client.HTTPClient.Transport.(*http2.Transport).DialTLSContext
-	if dialTLS == nil {
-		panic("nil dialTLS")
-	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	defer listener.Close()
-	var e error
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{crt},
-	}
-	_, e = dialTLS(context.Background(), "tcp", address, tlsConfig)
-	if e == nil {
-		t.Fatal("Dial completed successfully")
-	}
-	// Go 1.7.x and later will return a context deadline exceeded error
-	// Previous versions will return a time out
-	if !strings.Contains(e.Error(), "timed out") && !errors.Is(e, context.DeadlineExceeded) {
-		t.Errorf("Unexpected error: %s", e)
-	}
-}
-
 // Functional Tests
 
 func TestURL(t *testing.T) {
@@ -219,7 +183,7 @@ func TestClientPushWithNilContext(t *testing.T) {
 	}))
 	defer server.Close()
 
-	//nolint:SA1012
+	//lint:ignore SA1012 we need use nil context for test
 	res, err := mockClient(server.URL).PushWithContext(nil, n)
 	assert.EqualError(t, err, "net/http: nil Context")
 	assert.Nil(t, res)
