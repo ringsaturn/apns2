@@ -9,13 +9,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/ringsaturn/apns2/token"
-	"golang.org/x/net/http2"
 )
 
 // Apple HTTP/2 Development & Production urls
@@ -48,29 +46,6 @@ var (
 	TLSDialTimeout = 20 * time.Second
 )
 
-// DialTLS is the default dial function for creating TLS connections for
-// non-proxied HTTPS requests.
-var DialTLS = func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-	dialer := &net.Dialer{
-		Timeout:   TLSDialTimeout,
-		KeepAlive: TCPKeepAlive,
-	}
-	return tls.DialWithDialer(dialer, network, addr, cfg)
-}
-
-// dialTLSContext.
-var dialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-	dialer := &net.Dialer{
-		Timeout:   TLSDialTimeout,
-		KeepAlive: TCPKeepAlive,
-	}
-	deadline, ok := ctx.Deadline()
-	if ok {
-		dialer.Deadline = deadline
-	}
-	return tls.DialWithDialer(dialer, network, addr, cfg)
-}
-
 // Client represents a connection with the APNs
 type Client struct {
 	Host        string
@@ -95,23 +70,18 @@ type connectionCloser interface {
 // If your use case involves multiple long-lived connections, consider using
 // the ClientManager, which manages clients for you.
 func NewClient(certificate tls.Certificate) *Client {
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-	}
-	transport := &http2.Transport{
-		TLSClientConfig: tlsConfig,
-		DialTLS:         DialTLS,
-		ReadIdleTimeout: ReadIdleTimeout,
-		DialTLSContext:  dialTLSContext,
-	}
-	return &Client{
+	client := &Client{
 		HTTPClient: &http.Client{
-			Transport: transport,
-			Timeout:   HTTPClientTimeout,
+			Timeout: HTTPClientTimeout,
 		},
 		Certificate: certificate,
 		Host:        DefaultHost,
 	}
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+	}
+	client.HTTPClient.Transport.(*http.Transport).TLSClientConfig = tlsConfig
+	return client
 }
 
 // NewTokenClient returns a new Client with an underlying http.Client configured
@@ -123,15 +93,10 @@ func NewClient(certificate tls.Certificate) *Client {
 // notifications; don’t repeatedly open and close connections. APNs treats rapid
 // connection and disconnection as a denial-of-service attack.
 func NewTokenClient(token *token.Token) *Client {
-	transport := &http2.Transport{
-		DialTLS:         DialTLS,
-		ReadIdleTimeout: ReadIdleTimeout,
-	}
 	return &Client{
 		Token: token,
 		HTTPClient: &http.Client{
-			Transport: transport,
-			Timeout:   HTTPClientTimeout,
+			Timeout: HTTPClientTimeout,
 		},
 		Host: DefaultHost,
 	}
