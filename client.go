@@ -58,6 +58,19 @@ var DialTLS = func(network, addr string, cfg *tls.Config) (net.Conn, error) {
 	return tls.DialWithDialer(dialer, network, addr, cfg)
 }
 
+// dialTLSContext.
+var dialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+	dialer := &net.Dialer{
+		Timeout:   TLSDialTimeout,
+		KeepAlive: TCPKeepAlive,
+	}
+	deadline, ok := ctx.Deadline()
+	if ok {
+		dialer.Deadline = deadline
+	}
+	return tls.DialWithDialer(dialer, network, addr, cfg)
+}
+
 // Client represents a connection with the APNs
 type Client struct {
 	Host        string
@@ -89,6 +102,7 @@ func NewClient(certificate tls.Certificate) *Client {
 		TLSClientConfig: tlsConfig,
 		DialTLS:         DialTLS,
 		ReadIdleTimeout: ReadIdleTimeout,
+		DialTLSContext:  dialTLSContext,
 	}
 	return &Client{
 		HTTPClient: &http.Client{

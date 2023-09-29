@@ -115,9 +115,15 @@ func TestClientBadDeviceToken(t *testing.T) {
 
 func TestDialTLSTimeout(t *testing.T) {
 	apns.TLSDialTimeout = 10 * time.Millisecond
-	crt, _ := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
+	crt, err := certificate.FromP12File("certificate/_fixtures/certificate-valid.p12", "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	client := apns.NewClient(crt)
 	dialTLS := client.HTTPClient.Transport.(*http2.Transport).DialTLSContext
+	if dialTLS == nil {
+		panic("nil dialTLS")
+	}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -213,7 +219,8 @@ func TestClientPushWithNilContext(t *testing.T) {
 	}))
 	defer server.Close()
 
-	res, err := mockClient(server.URL).PushWithContext(context.Background(), n)
+	//nolint:SA1012
+	res, err := mockClient(server.URL).PushWithContext(nil, n)
 	assert.EqualError(t, err, "net/http: nil Context")
 	assert.Nil(t, res)
 }
