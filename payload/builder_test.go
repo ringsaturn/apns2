@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/ringsaturn/apns2/payload"
+	. "github.com/caiyunapp/apns2/payload"
 	"github.com/stretchr/testify/assert"
 )
 

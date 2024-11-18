@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ringsaturn/apns2/token"
+	"github.com/caiyunapp/apns2/token"
 )
 
 // Apple HTTP/2 Development & Production urls

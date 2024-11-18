@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/ringsaturn/apns2"
-	"github.com/ringsaturn/apns2/certificate"
+	"github.com/caiyunapp/apns2"
+	"github.com/caiyunapp/apns2/certificate"
 )
 
 func main() {

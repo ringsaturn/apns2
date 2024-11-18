@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ringsaturn/apns2/token"
+	"github.com/caiyunapp/apns2/token"
 	"github.com/stretchr/testify/assert"
 )
 
